@@ -26,16 +26,22 @@
 
 import http from 'node:http';
 import { routes } from './routes';
+import { extractQueryParams } from './utils/extract-query-params';
 
 
 const server = http.createServer((req, res) => {
     const { method, url } = req
 
     const route = routes.find(route => {
-        return route.method === method && route.path === url
+        return route.method === method && route.path.test(url)
     })
 
     if (route) {
+        const routeParams = req.url.match(route.path)
+        const { query, ...params} = routeParams.groups // query é o grupo nomeado que captura a query parameter
+        req.query = query ? extractQueryParams(query) : {} // só para não retornar undefined
+
+        extractQueryParams(routeParams.groups.query)
         return route.handler(req, res)
     }
 
